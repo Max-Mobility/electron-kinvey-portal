@@ -12,8 +12,8 @@
 	},
 	"scripts": {
 		"postinstall": "electron-builder install-app-deps",
-		"fix-lint": "xo --space --fix",
-		"lint": "xo --space",
+		"fix-lint": "xo --space --ignore libs --fix",
+		"lint": "xo --ignore libs --space",
 		"test": "npm run lint",
 		"start": "electron .",
 		"pack": "electron-builder --dir",

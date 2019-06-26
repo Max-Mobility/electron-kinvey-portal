@@ -1,8 +1,8 @@
 const {dialog} = require('electron').remote;
-// Const Buffer = require('buffer').Buffer;
 const $ = require('jquery');
 const plotly = require('plotly.js');
 const d3 = require('d3');
+const {startSpinner, stopSpinner} = require('./spinner');
 
 let auth = null;
 const apiBase = 'https://baas.kinvey.com/appdata/kid_B1bNWWRsX/PSDSData';
@@ -14,12 +14,15 @@ $(window).resize(() => {
 $('#submit').on('click', () => {
   const un = $('#username').val();
   const pw = $('#password').val();
+  startSpinner();
   makeAuth(un, pw);
   makeRequest('psds1001', new Date('2019-06-08'), 50, 1)
     .then(dataArray => {
       plotData(dataArray);
+      stopSpinner();
     })
     .catch(error => {
+      stopSpinner();
       showError(error);
     });
 });
