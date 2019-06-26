@@ -1,5 +1,7 @@
 # Electron Kinvey Portal
 
+[![Build Status](https://travis-ci.org/Max-Mobility/electron-kinvey-portal.svg?branch=master)](https://travis-ci.org/Max-Mobility/electron-kinvey-portal)
+
 > Desktop app for pulling data from kinvey and interacting with it.
 
 
