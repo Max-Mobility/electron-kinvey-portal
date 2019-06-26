@@ -2,7 +2,7 @@
 <html>
 	<head>
 		<meta charset="utf-8">
-		<title>Electron boilerplate</title>
+		<title>Electron Kinvey Portal</title>
 		<link rel="stylesheet" href="index.css">
         <script src="node_modules/plotly.js/dist/plotly.js"></script>
         <script src="node_modules/jquery/dist/jquery.min.js"></script>
@@ -16,13 +16,15 @@
 	<body>
 		<div class="container">
 			<header>
-				<h1>Electron boilerplate</h1>
+				<h1>Electron Kinvey Portal</h1>
 				<p></p>
 			</header>
 			<section class="main"></section>
             <input id="username" type="text" placeholder="username" autocomplete="off"/>
             <input id="password" type="password" placeholder="password" autocomplete="off"/>
             <button class="btn" id="submit">Login</button>
+            <h3 id="title" align="center"></h3>
+            <div id="plot"></div>
 			<footer></footer>
 		</div>
         <script>

@@ -2,9 +2,15 @@ const { dialog } = require('electron').remote
 const Buffer = require('buffer').Buffer;
 const $ = require('jquery');
 const https = require('https');
+const plotly = require('plotly.js');
+const d3 = require('d3');
 
 let auth = null;
 const api_base = 'https://baas.kinvey.com/appdata/kid_B1bNWWRsX/PSDSData';
+
+$( window ).resize(function() {
+	plotly.Plots.resize(d3.select('#plot').node());
+});
 
 $('#submit').on('click', function() {
     const un = $('#username').val();
