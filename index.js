@@ -6,7 +6,6 @@ const {is} = require('electron-util');
 const unhandled = require('electron-unhandled');
 const debug = require('electron-debug');
 const contextMenu = require('electron-context-menu');
-const config = require('./config');
 const menu = require('./menu');
 
 unhandled();
@@ -14,7 +13,7 @@ debug();
 contextMenu();
 
 // Note: Must match `build.appId` in package.json
-app.setAppUserModelId('com.company.AppName');
+app.setAppUserModelId('com.permobil.electron.kinvey.portal');
 
 // Uncomment this before publishing your first version.
 // It's commented out as it throws an error if there are no published versions.
@@ -87,7 +86,4 @@ app.on('activate', () => {
   await app.whenReady();
   Menu.setApplicationMenu(menu);
   mainWindow = await createMainWindow();
-
-  const favoriteAnimal = config.get('favoriteAnimal');
-  mainWindow.webContents.executeJavaScript(`document.querySelector('header p').textContent = 'Your favorite animal is ${favoriteAnimal}'`);
 })();
