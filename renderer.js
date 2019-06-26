@@ -53,8 +53,8 @@ function plotData(dataArray) {
 
         obj[typeString].t.push(new Date(entry.t));
         obj[typeString].x.y.push(entry.d[0]);
-        obj[typeString].y.y.push(entry.d[0]);
-        obj[typeString].z.y.push(entry.d[0]);
+        obj[typeString].y.y.push(entry.d[1]);
+        obj[typeString].z.y.push(entry.d[2]);
       }
 
       return obj;
