@@ -4,6 +4,14 @@
 		<meta charset="utf-8">
 		<title>Electron boilerplate</title>
 		<link rel="stylesheet" href="index.css">
+        <script src="node_modules/plotly.js/dist/plotly.js"></script>
+        <script src="node_modules/jquery/dist/jquery.min.js"></script>
+        <script>
+          window.nodeRequire = require;
+          delete window.require;
+          delete window.exports;
+          delete window.module;
+        </script>
 	</head>
 	<body>
 		<div class="container">
@@ -12,7 +20,13 @@
 				<p></p>
 			</header>
 			<section class="main"></section>
+            <input id="username" type="text" placeholder="username" autocomplete="off"/>
+            <input id="password" type="password" placeholder="password" autocomplete="off"/>
+            <button class="btn" id="submit">Login</button>
 			<footer></footer>
 		</div>
+        <script>
+          nodeRequire("./renderer.js")
+        </script>
 	</body>
 </html>

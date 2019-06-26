@@ -26,6 +26,7 @@
 		"electron-unhandled": "^2.2.0",
 		"electron-updater": "^4.0.6",
 		"electron-util": "^0.12.0",
+		"jquery": "^3.4.1",
 		"plotly.js": "^1.48.3"
 	},
 	"devDependencies": {
