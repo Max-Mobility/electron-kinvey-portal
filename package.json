@@ -1,14 +1,14 @@
 {
-	"name": "app-name",
-	"productName": "App Name",
-	"version": "0.0.0",
-	"description": "The best app ever",
+	"name": "electron-kinvey-portal",
+	"productName": "Electron Kinvey Portal",
+	"version": "0.0.1",
+	"description": "Interface for interacting with data / files within Kinvey.",
 	"license": "MIT",
-	"repository": "sindresorhus/electron-boilerplate",
+	"repository": "max-mobility/electron-kinvey-portal",
 	"author": {
-		"name": "Your Name",
-		"email": "user@gmail.com",
-		"url": "https://sindresorhus.com"
+		"name": "William Emfinger",
+		"email": "waemfinger@gmail.com",
+		"url": "https://permobilus.com"
 	},
 	"scripts": {
 		"postinstall": "electron-builder install-app-deps",
@@ -48,7 +48,7 @@
 		"releaseDraft": false
 	},
 	"build": {
-		"appId": "com.company.AppName",
+		"appId": "com.permobil.electron.kinvey.portal",
 		"mac": {
 			"category": "public.app-category.social-networking",
 			"darkModeSupport": true
