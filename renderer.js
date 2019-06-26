@@ -20,14 +20,57 @@ $('#submit').on('click', function() {
         .catch(err => { showError(err) });
 });
 
-function showError(err) {
-    console.error('showError:',err);
-    let title = 'Error Making Kinvey Request';
-    if (err.error) title += ' - ' + err.error;
-    let message = '';
-    if (err.description) message += err.description;
-    if (err.debug) message += '\n\n' + err.debug;
-    dialog.showErrorBox(title, message);
+function plotData(dataArray) {
+    const pdata = dataArray.sensor_data
+          .filter(d => {
+              return d.s == 10; // linear acceleration
+          })
+          .reduce((arr, data) => {
+              return arr.concat(data.d);
+          }, []);
+	var gd3 = d3.select('#plot')
+		.style({
+		    width: '100%',
+		    'min-width': '400px',
+		    height: '100%',
+		    'min-height': '200px'
+		});
+
+	var gd = gd3.node();
+    const layout = makeLayout();
+	Plotly.plot(gd, pdata, layout, {
+		modeBarButtons: [[{
+		    'name': 'toImage',
+		    'title': 'Download plot as png',
+		    'icon': Plotly.Icons.camera,
+		    'click': function(gd) {
+			    var format = 'png';
+
+			    var n = $(container).find(id);
+			    Plotly.downloadImage(gd, {
+			        'format': format,
+			        'width': n.width(),
+			        'height': n.height(),
+			    })
+			        .then(function(filename) {
+			        })
+			        .catch(function() {
+			        });
+		    }
+		}],[
+		    'zoom2d',
+		    'pan2d',
+		    'select2d',
+		    'lasso2d',
+		    'zoomIn2d',
+		    'zoomOut2d',
+		    'autoScale2d',
+		    'resetScale2d',
+		    'hoverClosestCartesian',
+		    'hoverCompareCartesian'
+		]],
+	});
+    
 }
 
 function makeRequest(userId, date, limit, skip) {
@@ -75,4 +118,14 @@ function makeAuth(un, pw) {
 	    const _auth = new Buffer.from(authorizationToEncode);
 	    auth = 'Basic ' + _auth.toString('base64');
     }
+}
+
+function showError(err) {
+    console.error('showError:',err);
+    let title = 'Error Making Kinvey Request';
+    if (err.error) title += ' - ' + err.error;
+    let message = '';
+    if (err.description) message += err.description;
+    if (err.debug) message += '\n\n' + err.debug;
+    dialog.showErrorBox(title, message);
 }
