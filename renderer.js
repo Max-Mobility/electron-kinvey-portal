@@ -1,57 +1,64 @@
-const { dialog } = require('electron').remote
-const Buffer = require('buffer').Buffer;
+const {dialog} = require('electron').remote;
+// Const Buffer = require('buffer').Buffer;
 const $ = require('jquery');
-const https = require('https');
 const plotly = require('plotly.js');
 const d3 = require('d3');
 
 let auth = null;
-const api_base = 'https://baas.kinvey.com/appdata/kid_B1bNWWRsX/PSDSData';
+const apiBase = 'https://baas.kinvey.com/appdata/kid_B1bNWWRsX/PSDSData';
 
-$( window ).resize(function() {
+$(window).resize(() => {
   plotly.Plots.resize(d3.select('#plot').node());
 });
 
-$('#submit').on('click', function() {
+$('#submit').on('click', () => {
   const un = $('#username').val();
   const pw = $('#password').val();
   makeAuth(un, pw);
   makeRequest('psds1001', new Date('2019-06-08'), 50, 1)
-    .then(dataArray => { plotData( dataArray ) })
-    .catch(err => { showError(err) });
+    .then(dataArray => {
+      plotData(dataArray);
+    })
+    .catch(error => {
+      showError(error);
+    });
 });
 
 function plotData(dataArray) {
   console.log('plotting data');
   const data = dataArray
-        .map(d => { return d.sensor_data })
-        .flat()
-        .reduce((obj, entry) => {
-          const typeString = sensorTypeToString(entry.s);
-          if (typeString !== 'unknown') {
-            if (!obj[typeString]) {
-              // create new plot data object
-              let t = [];
-              obj[typeString] = {
-                't': t,
-                'x': {
-                  x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
-                },
-                'y': {
-                  x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
-                },
-                'z': {
-                  x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
-                }
-              };
+    .map(d => {
+      return d.sensor_data;
+    })
+    .flat()
+    .reduce((obj, entry) => {
+      const typeString = sensorTypeToString(entry.s);
+      if (typeString !== 'unknown') {
+        if (!obj[typeString]) {
+          // Create new plot data object
+          const t = [];
+          obj[typeString] = {
+            t,
+            x: {
+              x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
+            },
+            y: {
+              x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
+            },
+            z: {
+              x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
             }
-            obj[typeString]['t'].push(new Date(entry.t));
-            obj[typeString]['x'].y.push(entry.d[0]);
-            obj[typeString]['y'].y.push(entry.d[0]);
-            obj[typeString]['z'].y.push(entry.d[0]);
-          }
-          return obj;
-        }, {});
+          };
+        }
+
+        obj[typeString].t.push(new Date(entry.t));
+        obj[typeString].x.y.push(entry.d[0]);
+        obj[typeString].y.y.push(entry.d[0]);
+        obj[typeString].z.y.push(entry.d[0]);
+      }
+
+      return obj;
+    }, {});
   const pdata = Object.keys(data).reduce((arr, k) => {
     return arr.concat([
       data[k].x,
@@ -60,7 +67,7 @@ function plotData(dataArray) {
     ]);
   }, []);
   /*
-    var gd3 = d3.select('#plot')
+    Var gd3 = d3.select('#plot')
     .style({
     width: '100%',
     'min-width': '400px',
@@ -69,28 +76,26 @@ function plotData(dataArray) {
     });
     var gd = gd3.node();
   */
-  var gd = d3.select('#plot').node();
+  const gd = d3.select('#plot').node();
   const layout = makeLayout();
-  Plotly.plot(gd, pdata, layout, {
+  plotly.plot(gd, pdata, layout, {
     modeBarButtons: [[{
-      'name': 'toImage',
-      'title': 'Download plot as png',
-      'icon': Plotly.Icons.camera,
-      'click': function(gd) {
-        var format = 'png';
+      name: 'toImage',
+      title: 'Download plot as png',
+      icon: plotly.Icons.camera,
+      click(gd) {
+        const format = 'png';
 
-        var n = $(container).find(id);
-        Plotly.downloadImage(gd, {
-          'format': format,
-          'width': n.width(),
-          'height': n.height(),
+        const n = $('.container').find('#plot');
+        plotly.downloadImage(gd, {
+          format,
+          width: n.width(),
+          height: n.height()
         })
-          .then(function(filename) {
-          })
-          .catch(function() {
+          .catch(() => {
           });
       }
-    }],[
+    }], [
       'zoom2d',
       'pan2d',
       'select2d',
@@ -101,7 +106,7 @@ function plotData(dataArray) {
       'resetScale2d',
       'hoverClosestCartesian',
       'hoverCompareCartesian'
-    ]],
+    ]]
   });
 }
 
@@ -113,7 +118,7 @@ function makeLayout() {
     legend: {
       xanchor: 'right'
     },
-    //annotations: annotations,
+    // Annotations: annotations,
     margin: {
       pad: 0,
       l: 50,
@@ -131,45 +136,52 @@ function makeLayout() {
 function sensorTypeToString(t) {
   let typeString = 'unknown';
   switch (t) {
-  case 9:
-    typeString = 'Gravity'
-    break;
-  case 10:
-    typeString = 'Linear Acceleration'
-    break;
-  case 4:
-    typeString = 'Gyroscope'
-    break;
-  case 15:
-    typeString = 'Rotation Vector'
-    break;
+    case 9:
+      typeString = 'Gravity';
+      break;
+    case 10:
+      typeString = 'Linear Acceleration';
+      break;
+    case 4:
+      typeString = 'Gyroscope';
+      break;
+    case 15:
+      typeString = 'Rotation Vector';
+      break;
+    default:
+      typeString = 'unknown';
+      break;
   }
+
   return typeString;
 }
 
 function makeRequest(userId, date, limit, skip) {
   if (!auth) {
+    // eslint-disable-next-line prefer-promise-reject-errors
     return Promise.reject({
       error: 'No Credentials Provided',
       description: 'No username / password combination was provided.'
     });
   }
+
   console.log('fetching data from kinvey.');
-  // do a test request
-  let url = api_base;
+  // Do a test request
+  let url = apiBase;
   url += '?';
+  const userIdKey = 'user_identifier';
   const query = {
-    user_identifier: userId,
+    [userIdKey]: userId,
     '_kmd.ect': {
-      '$gt': date.toISOString()
+      $gt: date.toISOString()
     }
   };
   url += `query=${JSON.stringify(query)}&`;
   url += `limit=${limit}&`;
-  url += 'skip=${skip}';
+  url += `skip=${skip}`;
   const options = {
     headers: {
-      'Authorization': auth
+      Authorization: auth
     },
     method: 'GET'
   };
@@ -179,7 +191,8 @@ function makeRequest(userId, date, limit, skip) {
       if (res.error) {
         throw res;
       }
-      // do something here
+
+      // Do something here
       console.log('got res', res);
       return res;
     });
@@ -188,19 +201,28 @@ function makeRequest(userId, date, limit, skip) {
 function makeAuth(un, pw) {
   auth = null;
   if (un && pw) {
-    // set up the auth
+    // Set up the auth
     const authorizationToEncode = `${un}:${pw}`;
-    const _auth = new Buffer.from(authorizationToEncode);
+    const _auth = Buffer.from(authorizationToEncode);
     auth = 'Basic ' + _auth.toString('base64');
   }
 }
 
 function showError(err) {
-  console.error('showError:',err);
+  console.error('showError:', err);
   let title = 'Error Making Kinvey Request';
-  if (err.error) title += ' - ' + err.error;
+  if (err.error) {
+    title += ' - ' + err.error;
+  }
+
   let message = '';
-  if (err.description) message += err.description;
-  if (err.debug) message += '\n\n' + err.debug;
+  if (err.description) {
+    message += err.description;
+  }
+
+  if (err.debug) {
+    message += '\n\n' + err.debug;
+  }
+
   dialog.showErrorBox(title, message);
 }
