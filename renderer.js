@@ -24,7 +24,8 @@ $('#submit').on('click', function() {
 function plotData(dataArray) {
   console.log('plotting data');
   const data = dataArray
-        .map(d => d.sensor_data)
+        .map(d => { return d.sensor_data })
+        .flat()
         .reduce((obj, entry) => {
           const typeString = sensorTypeToString(entry.s);
           if (typeString !== 'unknown') {
@@ -44,7 +45,7 @@ function plotData(dataArray) {
                 }
               };
             }
-            obj[typeString]['t'].push(entry.t);
+            obj[typeString]['t'].push(new Date(entry.t));
             obj[typeString]['x'].y.push(entry.d[0]);
             obj[typeString]['y'].y.push(entry.d[0]);
             obj[typeString]['z'].y.push(entry.d[0]);
