@@ -17,11 +17,13 @@ $('#submit').on('click', function() {
     const pw = $('#password').val();
     makeAuth(un, pw);
     makeRequest('psds1001', new Date('2019-06-08'), 50, 1)
+        .then(dataArray => { plotData( dataArray ) })
         .catch(err => { showError(err) });
 });
 
 function plotData(dataArray) {
-    const pdata = dataArray.sensor_data
+    const pdata = dataArray
+          .map(d => d.sensor_data)
           .filter(d => {
               return d.s == 10; // linear acceleration
           })
