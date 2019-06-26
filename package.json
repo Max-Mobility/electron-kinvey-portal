@@ -1,7 +1,7 @@
 {
 	"name": "electron-kinvey-portal",
 	"productName": "Electron Kinvey Portal",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"description": "Interface for interacting with data / files within Kinvey.",
 	"license": "MIT",
 	"repository": "max-mobility/electron-kinvey-portal",
@@ -12,7 +12,7 @@
 	},
 	"scripts": {
 		"postinstall": "electron-builder install-app-deps",
-    "fix-lint": "xo --space --fix",
+		"fix-lint": "xo --space --fix",
 		"lint": "xo --space",
 		"test": "npm run lint",
 		"start": "electron .",
