@@ -22,14 +22,42 @@ $('#submit').on('click', function() {
 });
 
 function plotData(dataArray) {
-    const pdata = dataArray
+    const data = dataArray
           .map(d => d.sensor_data)
-          .filter(d => {
-              return d.s == 10; // linear acceleration
-          })
-          .reduce((arr, data) => {
-              return arr.concat(data.d);
-          }, []);
+          .reduce((obj, entry) => {
+              const typeString = sensorTypeToString(entry.s);
+              if (typeString !== 'unknown') {
+                  if (!obj[typeString]) {
+                      // create new plot data object
+                      let t = [];
+                      obj[typeString] = {
+                          't': t,
+                          'x': {
+                              x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
+                          },
+                          'y': {
+                              x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
+                          },
+                          'z': {
+                              x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
+                          }                              
+                      };
+                  }
+                  obj[typeString]['t'].push(entry.t);
+                  obj[typeString]['x'].y.push(entry.d[0]);
+                  obj[typeString]['y'].y.push(entry.d[0]);
+                  obj[typeString]['z'].y.push(entry.d[0]);
+              }
+              return obj;
+          }, {});
+    const pdata = Object.keys(data).reduce((arr, k) => {
+        return arr.concat([
+            data[k].x,
+            data[k].y,
+            data[k].z
+        ]);
+    }, []);
+    /*
 	var gd3 = d3.select('#plot')
 		.style({
 		    width: '100%',
@@ -37,8 +65,9 @@ function plotData(dataArray) {
 		    height: '100%',
 		    'min-height': '200px'
 		});
-
 	var gd = gd3.node();
+    */
+	var gd = d3.select('#plot').node();
     const layout = makeLayout();
 	Plotly.plot(gd, pdata, layout, {
 		modeBarButtons: [[{
@@ -73,6 +102,25 @@ function plotData(dataArray) {
 		]],
 	});
     
+}
+
+function sensorTypeToString(t) {
+    let typeString = 'unknown';
+    switch (t) {
+    case 9:
+        typeString = 'Gravity'
+        break;
+    case 10:
+        typeString = 'Linear Acceleration'
+        break;
+    case 4:
+        typeString = 'Gyroscope'
+        break;
+    case 15:
+        typeString = 'Rotation Vector'
+        break;
+    }
+    return typeString;
 }
 
 function makeRequest(userId, date, limit, skip) {
