@@ -181,6 +181,7 @@ function makeRequest(userId, date, limit, skip) {
       if (res.error) {
         throw res;
       }
+
       return res;
     });
 }
