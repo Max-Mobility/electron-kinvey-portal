@@ -66,16 +66,6 @@ function plotData(dataArray) {
       data[k].z
     ]);
   }, []);
-  /*
-    Var gd3 = d3.select('#plot')
-    .style({
-    width: '100%',
-    'min-width': '400px',
-    height: '100%',
-    'min-height': '200px'
-    });
-    var gd = gd3.node();
-  */
   const gd = d3.select('#plot').node();
   const layout = makeLayout();
   plotly.plot(gd, pdata, layout, {
@@ -191,9 +181,6 @@ function makeRequest(userId, date, limit, skip) {
       if (res.error) {
         throw res;
       }
-
-      // Do something here
-      console.log('got res', res);
       return res;
     });
 }
