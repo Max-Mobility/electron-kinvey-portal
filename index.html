@@ -23,45 +23,122 @@
   </head>
   <body>
     <div class="window">
+      <header class="toolbar toolbar-header">
+        <h1 class="title">Header</h1>
+      </header>
       <div class="window-content">
         <div class="pane-group">
           <div class="pane-sm sidebar">
             <div id="login">
-              <input id="username" type="text" placeholder="username" autocomplete="off"/>
-              <input id="password" type="password" placeholder="password" autocomplete="off"/>
-              <button class="btn btn-positive" id="submit">Login</button>
+              <h5 class="nav-group-title">Controls</h5>
+              <form>
+                <div class="form-group">
+                  <label>Email Address</label>
+                  <input id="username" type="text" placeholder="username" autocomplete="off"/>
+                </div>
+                <div class="form-group">
+                  <label>Password</label>
+                  <input id="password" type="password" placeholder="password" autocomplete="off"/>
+                </div>
+                <div class="form-group">
+                  <label>Environment</label>
+                  <select class="form-control"></select>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-positive" id="submit">Login</button>
+                </div>
+              </form>
             </div>
             <div id="controls">
-              <div class="control">
-                <span>Study ID:</span>
+              <h5 class="nav-group-title">Controls</h5>
+              <div class="form-group">
+                <label>Collection</label>
+                <select class="form-control"></select>
+              </div>
+              <div class="form-group">
+                <label>Study ID:</label>
                 <input id="user_id" type="text" placeholder="study id" autocomplete="off"/>
               </div>
-              <div class="control">
-                <span>From:</span>
+              <div class="form-group">
+                <label>From:</label>
                 <input id="date" type="date" value="2019-06-08" min="2019-06-01"/>
               </div>
-              <div class="control">
-                <span>Limit:</span>
+              <div class="form-group">
+                <label>Limit:</label>
                 <input id="limit" type="number" value="50" placeholder="limit" min="1"/>
               </div>
-              <div class="control">
-                <span>Skip:</span>
+              <div class="form-group">
+                <label>Skip:</label>
                 <input id="skip" type="number" value="0" placeholder="skip" min="0"/>
               </div>
-              <button class="btn btn-primary" id="fetch">Fetch</button>
-              <button class="btn btn-warning" id="clear_plot">Clear Plot</button>
+              <div class="form-actions">
+                <button class="btn btn-negative" id="logout">Logout</button>
+                <button class="btn btn-warning" id="clear_plot">Clear Plot</button>
+                <button class="btn btn-primary" id="fetch">Fetch</button>
+              </div>
+              <nav class="nav-group">
+                <h5 class="nav-group-title">Views</h5>
+                <a class="nav-group-item">
+                  <span class="icon icon-home"></span>
+                  Raw Sensor Data
+                </a>
+                <span class="nav-group-item">
+                  <span class="icon icon-location"></span>
+                  Locations
+                </span>
+                <span class="nav-group-item">
+                  <span class="icon icon-folder"></span>
+                  Documents
+                </span>
+              </nav>
             </div>
           </div>
           <div class="pane">
-              <div id="spinner">
+            <div class="tab-group">
+              <div class="tab-item active" onclick="showTab(event, 'raw_data'); renderer.plotData();">
+                <span class="icon icon-cancel icon-close-tab"></span>
+                Raw Sensor Data
               </div>
-              <div id="plot" class="plot"></div>
+              <div class="tab-item" onclick="showTab(event, 'locations'); renderer.plotGeo();">
+                <span class="icon icon-cancel icon-close-tab"></span>
+                Locations
+              </div>
+            </div>
+            <div id="raw_data" class="kinvey-plot tab-content"></div>
+            <div id="locations" class="kinvey-plot tab-content" style="display: none;"></div>
           </div>
         </div>
       </div>
+      <footer class="toolbar toolbar-footer">
+        <h1 class="title">Footer</h1>
+      </footer>
     </div>
     <script>
-      nodeRequire("./renderer.js")
+      const renderer = nodeRequire("./renderer.js");
     </script>
+    <script>
+      var sizePlots = function(){
+      $(".tab-content")
+      .css("height", "0px")
+      .css("height", $(".pane").height() - $(".tab-group").height() - 1)
+      }
+      $(window).resize(sizePlots);
+    </script>
+    <script>
+        function showTab(event, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab-content");
+            for (i=0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";
+            }
+
+            tablinks = document.getElementsByClassName("tab-item");
+            for ( i=0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace("active", "");
+            }
+            document.getElementById(tabName).style.display = "block";
+            event.currentTarget.className += " active";
+        }
+        </script>
   </body>
 </html>

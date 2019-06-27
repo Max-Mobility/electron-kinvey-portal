@@ -30,14 +30,31 @@ keytar.getPassword(keytarServiceName, keytarKinveyName)
 let username = null;
 let password = null;
 let userData = {};
-let plotDataArray = [];
+let userDataArray = [];
+const geoData = {};
+const geoDataArray = [];
 const apiBase = privateKeys.KinveyKeys.HOST_URL;
 const appKey = privateKeys.KinveyKeys.PROD_KEY;
 const dbId = 'PSDSData';
 const appAuth = privateKeys.KinveyKeys.PROD_SECRET;
+const mapboxKey = privateKeys.MapboxKeys.MAPBOX_TOKEN;
 
 $(window).resize(() => {
-  plotly.Plots.resize(d3.select('#plot').node());
+  d3.selectAll('.kinvey-plot').each(function () {
+    if (d3.select(this).node()) {
+      plotly.Plots.resize(d3.select(this).node()).catch(error => {
+        console.error(error);
+      });
+    }
+  });
+});
+
+$('#logout').on('click', () => {
+  logout()
+    .then(() => {
+      hideMenu(500);
+      showLogin(500);
+    });
 });
 
 $('#submit').on('click', () => {
@@ -70,7 +87,8 @@ $('#fetch').on('click', () => {
     .then(dataArray => {
       stopSpinner();
       if (dataArray) {
-        plotData(dataArray);
+        collectData(dataArray);
+        plotData();
       }
     })
     .catch(error => {
@@ -84,19 +102,47 @@ $('#clear_plot').on('click', () => {
 });
 
 function clearPlot() {
-  plotly.purge(d3.select('#plot').node());
+  plotly.purge(d3.select('#raw_data').node());
   userData = {};
-  plotDataArray = [];
+  userDataArray = [];
 }
 
-function plotData(dataArray) {
-  console.log('plotting data');
+function collectData(dataArray) {
+  console.log('parsing data');
   dataArray
     .map(d => {
-      return d.sensor_data;
+      // Pull out which user this is
+      const userId = d.user_identifier;
+      // Pull out the location data
+      const geo = d.location;
+      if (geo) {
+        // Upsert geodata
+        if (!geoData[userId]) {
+          geoData[userId] = {
+            type: 'scattermapbox',
+            mode: 'lines',
+            lon: [],
+            lat: [],
+            time: []
+          };
+          geoDataArray.push(geoData[userId]);
+        }
+
+        const lat = geo.latitude;
+        const lon = geo.longitude;
+        const t = geo.time;
+        // Insert into geodata
+        geoData[userId].lon.push(lon);
+        geoData[userId].lat.push(lat);
+        geoData[userId].time.push(t);
+      }
+
+      // Need to return the original for the chain
+      return d;
     })
+    .map(d => d.sensor_data)
     .flat()
-    // eslint-disable-next-line array-callback-return
+  // eslint-disable-next-line array-callback-return
     .map(entry => {
       const typeString = sensorTypeToString(entry.s);
       if (typeString !== 'unknown') {
@@ -116,7 +162,7 @@ function plotData(dataArray) {
             }
           };
           // Make sure to update the data array
-          plotDataArray.push(
+          userDataArray.push(
             userData[typeString].x,
             userData[typeString].y,
             userData[typeString].z
@@ -130,9 +176,24 @@ function plotData(dataArray) {
         userData[typeString].z.y.push(entry.d[2]);
       }
     });
-  const gd = d3.select('#plot').node();
-  const layout = makeLayout();
-  plotly.react(gd, plotDataArray, layout, {
+}
+
+function plotGeo() {
+  if (geoDataArray.length <= 0) {
+    return;
+  }
+
+  console.log('plotting geo');
+  const gd = d3.select('#locations').node();
+  const center = {
+    lat: geoDataArray[0].lat[0],
+    lon: geoDataArray[0].lon[0]
+  };
+  const layout = makeGeoLayout(center);
+  plotly.setPlotConfig({
+    mapboxAccessToken: mapboxKey
+  });
+  plotly.react(gd, geoDataArray, layout, {
     modeBarButtons: [[{
       name: 'toImage',
       title: 'Download plot as png',
@@ -140,7 +201,43 @@ function plotData(dataArray) {
       click(gd) {
         const format = 'png';
 
-        const n = $('.container').find('#plot');
+        const n = $('.container').find('#raw_data');
+        plotly.downloadImage(gd, {
+          format,
+          width: n.width(),
+          height: n.height()
+        })
+          .catch(() => {
+          });
+      }
+    }], [
+      'zoom2d',
+      'pan2d',
+      'select2d',
+      'lasso2d',
+      'zoomIn2d',
+      'zoomOut2d',
+      'autoScale2d',
+      'resetScale2d',
+      'hoverClosestCartesian',
+      'hoverCompareCartesian'
+    ]]
+  });
+}
+
+function plotData() {
+  console.log('plotting data');
+  const gd = d3.select('#raw_data').node();
+  const layout = makeLayout();
+  plotly.react(gd, userDataArray, layout, {
+    modeBarButtons: [[{
+      name: 'toImage',
+      title: 'Download plot as png',
+      icon: plotly.Icons.camera,
+      click(gd) {
+        const format = 'png';
+
+        const n = $('.container').find('#raw_data');
         plotly.downloadImage(gd, {
           format,
           width: n.width(),
@@ -187,6 +284,31 @@ function makeLayout() {
   return layout;
 }
 
+function makeGeoLayout(coord) {
+  const layout = {
+    mapbox: {
+      center: {
+        lat: coord.lat,
+        lon: coord.lon
+      },
+      domain: {
+        x: [0, 1],
+        y: [0, 1]
+      },
+      style: 'dark',
+      zoom: 10
+    },
+    margin: {
+      r: 0,
+      t: 0,
+      b: 0,
+      l: 0,
+      pad: 0
+    }
+  };
+  return layout;
+}
+
 function sensorTypeToString(t) {
   let typeString = 'unknown';
   switch (t) {
@@ -221,13 +343,17 @@ function makeRequest(userId, date, limit, skip) {
 
   console.log('fetching data from kinvey.');
   // Do a test request
-  const userIdKey = 'user_identifier';
-  const query = {
-    [userIdKey]: userId,
-    '_kmd.ect': {
+  const query = {};
+  if (userId) {
+    query.user_identifier = userId;
+  }
+
+  if (date) {
+    query['_kmd.ect'] = {
       $gt: date.toISOString()
-    }
-  };
+    };
+  }
+
   let cancel = null;
   const url = `${apiBase}/appdata/${appKey}/${dbId}`;
   return axios.get(url, {
@@ -267,19 +393,12 @@ function login() {
     Authorization: makeAuth(appKey, appAuth),
     'Content-Type': 'application/json'
   };
-  let cancel = null;
   const url = `${apiBase}/user/${appKey}/login`;
-  console.log(url);
-  console.log(data);
-  console.log(headers);
   return axios({
     url,
     method: 'post',
     data,
-    headers,
-    cancelToken: new CancelToken(c => {
-      cancel = c;
-    })
+    headers
   })
     .then(res => res.data)
     .then(data => {
@@ -290,14 +409,31 @@ function login() {
         auth = sessionAuth(token);
       }
 
-      console.log(token);
-      console.log(auth);
       return Boolean(auth);
     })
     .catch(error => {
-      cancel();
       showError(error);
       return false;
+    });
+}
+
+function logout() {
+  const headers = {
+    Authorization: auth
+  };
+  const url = `${apiBase}/user/${appKey}/_logout`;
+  return axios({
+    url,
+    method: 'post',
+    headers
+  })
+    .catch(error => {
+      showError(error);
+    })
+    .finally(() => {
+      auth = null;
+      token = null;
+      keytar.deletePassword(keytarServiceName, keytarKinveyName);
     });
 }
 
@@ -361,3 +497,14 @@ function hideLogin(duration) {
     $('#login').hide();
   }
 }
+
+function showLogin(duration) {
+  if (duration) {
+    $('#login').show({duration});
+  } else {
+    $('#login').show();
+  }
+}
+
+module.exports.plotData = plotData;
+module.exports.plotGeo = plotGeo;
