@@ -345,7 +345,8 @@ function makeRequest(userId, date, limit, skip) {
   // Do a test request
   const query = {};
   if (userId) {
-    query.user_identifier = userId;
+    const userIdKey = 'user_identifier';
+    query[userIdKey] = userId;
   }
 
   if (date) {
