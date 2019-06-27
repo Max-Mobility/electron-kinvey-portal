@@ -2,24 +2,41 @@ const {dialog} = require('electron').remote;
 const $ = require('jquery');
 const plotly = require('plotly.js');
 const d3 = require('d3');
+const axios = require('axios');
+const privateKeys = require('@maxmobility/private-keys');
 const {startSpinner, stopSpinner} = require('./spinner');
 
+const {CancelToken} = axios;
+
 let auth = null;
-const apiBase = 'https://baas.kinvey.com/appdata/kid_B1bNWWRsX/PSDSData';
+let token = null;
+let username = null;
+let password = null;
+let userData = {};
+let plotDataArray = [];
+const apiBase = privateKeys.KinveyKeys.HOST_URL;
+const appKey = privateKeys.KinveyKeys.PROD_KEY;
+const dbId = 'PSDSData';
+const appAuth = privateKeys.KinveyKeys.PROD_SECRET;
+
+hideMenu();
 
 $(window).resize(() => {
   plotly.Plots.resize(d3.select('#plot').node());
 });
 
 $('#submit').on('click', () => {
-  const un = $('#username').val();
-  const pw = $('#password').val();
+  username = $('#username').val();
+  password = $('#password').val();
   startSpinner();
-  makeAuth(un, pw);
-  makeRequest('psds1001', new Date('2019-06-08'), 50, 1)
-    .then(dataArray => {
-      plotData(dataArray);
+  login()
+    .then(ret => {
       stopSpinner();
+      console.log('got ret', ret);
+      if (ret) {
+        hideLogin(500);
+        showMenu(500);
+      }
     })
     .catch(error => {
       stopSpinner();
@@ -27,20 +44,51 @@ $('#submit').on('click', () => {
     });
 });
 
+$('#fetch').on('click', () => {
+  const userId = $('#user_id').val();
+  const date = $('#date').val();
+  const limit = $('#limit').val();
+  const skip = $('#skip').val();
+  console.log(date);
+  startSpinner();
+  makeRequest(userId, new Date(date), limit, skip)
+    .then(dataArray => {
+      stopSpinner();
+      if (dataArray) {
+        plotData(dataArray);
+      }
+    })
+    .catch(error => {
+      stopSpinner();
+      showError(error);
+    });
+});
+
+$('#clear_plot').on('click', () => {
+  clearPlot();
+});
+
+function clearPlot() {
+  plotly.purge(d3.select('#plot').node());
+  userData = {};
+  plotDataArray = [];
+}
+
 function plotData(dataArray) {
   console.log('plotting data');
-  const data = dataArray
+  dataArray
     .map(d => {
       return d.sensor_data;
     })
     .flat()
-    .reduce((obj, entry) => {
+    // eslint-disable-next-line array-callback-return
+    .map(entry => {
       const typeString = sensorTypeToString(entry.s);
       if (typeString !== 'unknown') {
-        if (!obj[typeString]) {
+        if (!userData[typeString]) {
           // Create new plot data object
           const t = [];
-          obj[typeString] = {
+          userData[typeString] = {
             t,
             x: {
               x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
@@ -52,26 +100,24 @@ function plotData(dataArray) {
               x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
             }
           };
+          // Make sure to update the data array
+          plotDataArray.push(
+            userData[typeString].x,
+            userData[typeString].y,
+            userData[typeString].z
+          );
         }
 
-        obj[typeString].t.push(new Date(entry.t));
-        obj[typeString].x.y.push(entry.d[0]);
-        obj[typeString].y.y.push(entry.d[1]);
-        obj[typeString].z.y.push(entry.d[2]);
+        // Now add the new data
+        userData[typeString].t.push(new Date(entry.t));
+        userData[typeString].x.y.push(entry.d[0]);
+        userData[typeString].y.y.push(entry.d[1]);
+        userData[typeString].z.y.push(entry.d[2]);
       }
-
-      return obj;
-    }, {});
-  const pdata = Object.keys(data).reduce((arr, k) => {
-    return arr.concat([
-      data[k].x,
-      data[k].y,
-      data[k].z
-    ]);
-  }, []);
+    });
   const gd = d3.select('#plot').node();
   const layout = makeLayout();
-  plotly.plot(gd, pdata, layout, {
+  plotly.react(gd, plotDataArray, layout, {
     modeBarButtons: [[{
       name: 'toImage',
       title: 'Download plot as png',
@@ -105,19 +151,19 @@ function plotData(dataArray) {
 
 function makeLayout() {
   const layout = {
+    datarevision: new Date().getTime(),
     xaxis: {
       title: 'Time (s)'
     },
     legend: {
       xanchor: 'right'
     },
-    // Annotations: annotations,
     margin: {
       pad: 0,
       l: 50,
-      r: 0,
+      r: 50,
       b: 50,
-      t: 0
+      t: 50
     },
     hovermode: 'closest',
     autosize: true,
@@ -160,8 +206,6 @@ function makeRequest(userId, date, limit, skip) {
 
   console.log('fetching data from kinvey.');
   // Do a test request
-  let url = apiBase;
-  url += '?';
   const userIdKey = 'user_identifier';
   const query = {
     [userIdKey]: userId,
@@ -169,34 +213,94 @@ function makeRequest(userId, date, limit, skip) {
       $gt: date.toISOString()
     }
   };
-  url += `query=${JSON.stringify(query)}&`;
-  url += `limit=${limit}&`;
-  url += `skip=${skip}`;
-  const options = {
+  let cancel = null;
+  const url = `${apiBase}/appdata/${appKey}/${dbId}`;
+  return axios.get(url, {
+    params: {
+      query,
+      limit,
+      skip
+    },
     headers: {
       Authorization: auth
     },
-    method: 'GET'
-  };
-  return fetch(url, options)
-    .then(data => data.json())
-    .then(res => {
-      if (res.error) {
-        throw res;
-      }
-
-      return res;
+    onDownloadProgress: progressEvent => {
+      console.log('download progress');
+      console.log(progressEvent);
+    },
+    onUploadProgress: progressEvent => {
+      console.log('upload progress');
+      console.log(progressEvent);
+    },
+    cancelToken: new CancelToken(c => {
+      cancel = c;
+    })
+  })
+    .then(res => res.data)
+    .catch(error => {
+      cancel();
+      showError(error);
     });
 }
 
+function login() {
+  const data = {
+    username,
+    password
+  };
+  const headers = {
+    Authorization: makeAuth(appKey, appAuth),
+    'Content-Type': 'application/json'
+  };
+  let cancel = null;
+  const url = `${apiBase}/user/${appKey}/login`;
+  console.log(url);
+  console.log(data);
+  console.log(headers);
+  return axios({
+    url,
+    method: 'post',
+    data,
+    headers,
+    cancelToken: new CancelToken(c => {
+      cancel = c;
+    })
+  })
+    .then(res => res.data)
+    .then(data => {
+      token = data._kmd.authtoken;
+      auth = null;
+      if (token) {
+        auth = sessionAuth(token);
+      }
+
+      console.log(token);
+      console.log(auth);
+      return Boolean(auth);
+    })
+    .catch(error => {
+      cancel();
+      showError(error);
+      return false;
+    });
+}
+
+function basicAuth(s) {
+  return 'Basic ' + Buffer.from(s).toString('base64');
+}
+
+function sessionAuth(s) {
+  return 'Kinvey ' + s;
+}
+
 function makeAuth(un, pw) {
-  auth = null;
+  let _auth = null;
   if (un && pw) {
     // Set up the auth
-    const authorizationToEncode = `${un}:${pw}`;
-    const _auth = Buffer.from(authorizationToEncode);
-    auth = 'Basic ' + _auth.toString('base64');
+    _auth = basicAuth(`${un}:${pw}`);
   }
+
+  return _auth;
 }
 
 function showError(err) {
@@ -216,4 +320,28 @@ function showError(err) {
   }
 
   dialog.showErrorBox(title, message);
+}
+
+function hideMenu(duration) {
+  if (duration) {
+    $('#controls').hide({duration});
+  } else {
+    $('#controls').hide();
+  }
+}
+
+function showMenu(duration) {
+  if (duration) {
+    $('#controls').show({duration});
+  } else {
+    $('#controls').show();
+  }
+}
+
+function hideLogin(duration) {
+  if (duration) {
+    $('#login').hide({duration});
+  } else {
+    $('#login').hide();
+  }
 }

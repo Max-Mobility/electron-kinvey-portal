@@ -3,11 +3,18 @@
   <head>
     <meta charset="utf-8">
     <title>Electron Kinvey Portal</title>
+
+    <!-- Stylesheets -->
     <link rel="stylesheet" href="index.css">
     <link rel="stylesheet" href="libs/spin.css"/>
+    <link rel="stylesheet" href="static/css/photon.min.css">
+
+    <!-- Javascript -->
+    <script src="template-app/js/menu.js" charset="utf-8"></script>
     <script src="node_modules/plotly.js/dist/plotly.js"></script>
     <script src="node_modules/jquery/dist/jquery.min.js"></script>
     <script src="libs/spin.js"></script>
+    <script src="spinner.js"></script>
     <script>
       window.nodeRequire = require;
       delete window.require;
@@ -16,21 +23,43 @@
     </script>
   </head>
   <body>
-    <header>
-      <h1>Electron Kinvey Portal</h1>
-      <p></p>
-    </header>
-    <div class="container">
-      <div id="form">
-        <input id="username" type="text" placeholder="username" autocomplete="off"/>
-        <input id="password" type="password" placeholder="password" autocomplete="off"/>
-        <button class="btn" id="submit">Login</button>
+    <div class="window">
+      <div class="window-content">
+        <div class="pane-group">
+          <div class="pane-sm sidebar">
+            <div id="login">
+              <input id="username" type="text" placeholder="username" autocomplete="off"/>
+              <input id="password" type="password" placeholder="password" autocomplete="off"/>
+              <button class="btn btn-positive" id="submit">Login</button>
+            </div>
+            <div id="controls">
+              <div class="control">
+                <span>Study ID:</span>
+                <input id="user_id" type="text" placeholder="study id" autocomplete="off"/>
+              </div>
+              <div class="control">
+                <span>From:</span>
+                <input id="date" type="date" value="2019-06-08" min="2019-06-01"/>
+              </div>
+              <div class="control">
+                <span>Limit:</span>
+                <input id="limit" type="number" value="50" placeholder="limit" min="1"/>
+              </div>
+              <div class="control">
+                <span>Skip:</span>
+                <input id="skip" type="number" value="0" placeholder="skip" min="0"/>
+              </div>
+              <button class="btn btn-primary" id="fetch">Fetch</button>
+              <button class="btn btn-warning" id="clear_plot">Clear Plot</button>
+            </div>
+          </div>
+          <div class="pane">
+              <div id="spinner">
+              </div>
+              <div id="plot" class="plot"></div>
+          </div>
+        </div>
       </div>
-      <div id="spinner">
-      </div>
-      <h3 id="title" align="center"></h3>
-      <div id="plot" class="plot"></div>
-      <footer></footer>
     </div>
     <script>
       nodeRequire("./renderer.js")
