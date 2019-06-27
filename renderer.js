@@ -64,7 +64,6 @@ $('#submit').on('click', () => {
   login()
     .then(ret => {
       stopSpinner();
-      console.log('got ret', ret);
       if (ret) {
         hideLogin(500);
         showMenu(500);
@@ -406,8 +405,13 @@ function login() {
       token = data._kmd.authtoken;
       auth = null;
       if (token) {
-        keytar.setPassword(keytarServiceName, keytarKinveyName, token);
-        auth = sessionAuth(token);
+          try {
+              auth = sessionAuth(token);
+              keytar.setPassword(keytarServiceName, keytarKinveyName, token);
+          } catch (e) {
+              auth = sessionAuth(token);
+              console.error('could not save token:', e);
+          }
       }
 
       return Boolean(auth);
