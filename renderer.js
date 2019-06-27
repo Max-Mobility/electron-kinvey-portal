@@ -405,13 +405,13 @@ function login() {
       token = data._kmd.authtoken;
       auth = null;
       if (token) {
-          try {
-              auth = sessionAuth(token);
-              keytar.setPassword(keytarServiceName, keytarKinveyName, token);
-          } catch (e) {
-              auth = sessionAuth(token);
-              console.error('could not save token:', e);
-          }
+        try {
+          auth = sessionAuth(token);
+          keytar.setPassword(keytarServiceName, keytarKinveyName, token);
+        } catch (e) {
+          auth = sessionAuth(token);
+          console.error('could not save token:', e);
+        }
       }
 
       return Boolean(auth);
