@@ -1,4 +1,4 @@
-const {dialog} = require('electron').remote;
+const {remote} = require('electron');
 const $ = require('jquery');
 const plotly = require('plotly.js');
 const d3 = require('d3');
@@ -7,9 +7,26 @@ const privateKeys = require('@maxmobility/private-keys');
 const {startSpinner, stopSpinner} = require('./spinner');
 
 const {CancelToken} = axios;
+const {dialog} = remote;
+const keytar = remote.require('keytar');
+
+const keytarServiceName = 'com.permobil.electron.kinvey.portal';
+const keytarKinveyName = 'KinveyAccountToken';
 
 let auth = null;
 let token = null;
+keytar.getPassword(keytarServiceName, keytarKinveyName)
+  .then(t => {
+    token = t;
+    if (token) {
+      auth = sessionAuth(token);
+      hideLogin();
+      showMenu();
+    } else {
+      hideMenu();
+    }
+  });
+
 let username = null;
 let password = null;
 let userData = {};
@@ -18,8 +35,6 @@ const apiBase = privateKeys.KinveyKeys.HOST_URL;
 const appKey = privateKeys.KinveyKeys.PROD_KEY;
 const dbId = 'PSDSData';
 const appAuth = privateKeys.KinveyKeys.PROD_SECRET;
-
-hideMenu();
 
 $(window).resize(() => {
   plotly.Plots.resize(d3.select('#plot').node());
@@ -271,6 +286,7 @@ function login() {
       token = data._kmd.authtoken;
       auth = null;
       if (token) {
+        keytar.setPassword(keytarServiceName, keytarKinveyName, token);
         auth = sessionAuth(token);
       }
 

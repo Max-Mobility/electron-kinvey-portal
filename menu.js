@@ -18,11 +18,11 @@ const showPreferences = () => {
 const helpSubmenu = [
   openUrlMenuItem({
     label: 'Website',
-    url: 'https://github.com/sindresorhus/electron-boilerplate'
+    url: 'https://github.com/max-mobility/electron-kinvey-portal'
   }),
   openUrlMenuItem({
     label: 'Source Code',
-    url: 'https://github.com/sindresorhus/electron-boilerplate'
+    url: 'https://github.com/max-mobility/electron-kinvey-portal'
   }),
   {
     label: 'Report an Issue…',
@@ -36,8 +36,8 @@ const helpSubmenu = [
 ${debugInfo()}`;
 
       openNewGitHubIssue({
-        user: 'sindresorhus',
-        repo: 'electron-boilerplate',
+        user: 'max-mobility',
+        repo: 'electron-kinvey-portal',
         body
       });
     }
@@ -51,7 +51,7 @@ if (!is.macos) {
     },
     aboutMenuItem({
       icon: path.join(__dirname, 'static', 'icon.png'),
-      text: 'Created by Your Name'
+      text: 'Created by William Emfinger'
     })
   );
 }

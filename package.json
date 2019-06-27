@@ -31,11 +31,13 @@
 		"electron-updater": "^4.0.6",
 		"electron-util": "^0.12.0",
 		"jquery": "^3.4.1",
+		"keytar": "^4.11.0",
 		"plotly.js": "^1.48.3"
 	},
 	"devDependencies": {
 		"electron": "^5.0.4",
 		"electron-builder": "^20.43.0",
+		"electron-rebuild": "^1.8.5",
 		"np": "^5.0.3",
 		"xo": "^0.24.0"
 	},
