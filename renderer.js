@@ -34,10 +34,15 @@ let userDataArray = [];
 const geoData = {};
 const geoDataArray = [];
 const apiBase = privateKeys.KinveyKeys.HOST_URL;
-const appKey = privateKeys.KinveyKeys.PROD_KEY;
-const dbId = 'PSDSData';
-const appAuth = privateKeys.KinveyKeys.PROD_SECRET;
+let appKey = privateKeys.KinveyKeys.PROD_KEY;
+let appAuth = privateKeys.KinveyKeys.PROD_SECRET;
+let dbId = 'PSDSData';
 const mapboxKey = privateKeys.MapboxKeys.MAPBOX_TOKEN;
+
+const envAuth = {
+  [privateKeys.KinveyKeys.PROD_KEY]: privateKeys.KinveyKeys.PROD_SECRET,
+  [privateKeys.KinveyKeys.DEV_KEY]: privateKeys.KinveyKeys.DEV_SECRET
+};
 
 $(window).resize(() => {
   d3.selectAll('.kinvey-plot').each(function () {
@@ -47,6 +52,17 @@ $(window).resize(() => {
       });
     }
   });
+});
+
+$('#environment_select').append(new Option(privateKeys.KinveyKeys.PROD_KEY, privateKeys.KinveyKeys.PROD_KEY));
+$('#environment_select').append(new Option(privateKeys.KinveyKeys.DEV_KEY, privateKeys.KinveyKeys.DEV_KEY));
+
+$('#environment_select').change(function () {
+  appKey = $(this).children('option:selected').val();
+  appAuth = envAuth[appKey];
+});
+$('#collection_select').change(function () {
+  dbId = $(this).children('option:selected').val();
 });
 
 $('#logout').on('click', () => {
@@ -423,6 +439,7 @@ function login() {
 }
 
 function logout() {
+  clearPlot();
   const headers = {
     Authorization: auth
   };
