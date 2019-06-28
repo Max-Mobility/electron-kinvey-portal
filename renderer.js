@@ -4,6 +4,7 @@ const plotly = require('plotly.js');
 const d3 = require('d3');
 const axios = require('axios');
 const privateKeys = require('@maxmobility/private-keys');
+const config = require('./config');
 const {startSpinner, stopSpinner} = require('./spinner');
 
 const {CancelToken} = axios;
@@ -15,17 +16,6 @@ const keytarKinveyName = 'KinveyAccountToken';
 
 let auth = null;
 let token = null;
-keytar.getPassword(keytarServiceName, keytarKinveyName)
-  .then(t => {
-    token = t;
-    if (token) {
-      auth = sessionAuth(token);
-      hideLogin();
-      showMenu();
-    } else {
-      hideMenu();
-    }
-  });
 
 let username = null;
 let password = null;
@@ -34,9 +24,9 @@ let userDataArray = [];
 let geoData = {};
 let geoDataArray = [];
 const apiBase = privateKeys.KinveyKeys.HOST_URL;
-let appKey = privateKeys.KinveyKeys.PROD_KEY;
+let appKey = config.get('kinvey.environment');
+let dbId = config.get('kinvey.collection');
 let appAuth = privateKeys.KinveyKeys.PROD_SECRET;
-let dbId = 'PSDSData';
 const mapboxKey = privateKeys.MapboxKeys.MAPBOX_TOKEN;
 
 const envAuth = {
@@ -44,25 +34,42 @@ const envAuth = {
   [privateKeys.KinveyKeys.DEV_KEY]: privateKeys.KinveyKeys.DEV_SECRET
 };
 
-$(window).resize(() => {
-  d3.selectAll('.kinvey-plot').each(function () {
-    if (d3.select(this).node()) {
-      plotly.Plots.resize(d3.select(this).node()).catch(error => {
-        console.error(error);
-      });
-    }
+$(document).ready(() => {
+  // Set up ui
+  showLogin();
+  hideMenu();
+  // Load saved login token and update ui accordingly
+  keytar.getPassword(keytarServiceName, keytarKinveyName)
+    .then(t => {
+      token = t;
+      if (token) {
+        auth = sessionAuth(token);
+        hideLogin();
+        showMenu();
+      } else {
+        hideMenu();
+      }
+    });
+  // Build environment selector
+  $('#environment_select').append(new Option('Production', privateKeys.KinveyKeys.PROD_KEY));
+  $('#environment_select').append(new Option('Development', privateKeys.KinveyKeys.DEV_KEY));
+  // Update auth when environment is selected
+  $('#environment_select').change(function () {
+    console.log('env select');
+    appKey = $(this).children('option:selected').val();
+    appAuth = envAuth[appKey];
+    config.set('kinvey.environment', appKey);
   });
-});
+  // Update db id when collection is selected
+  $('#collection_select').change(function () {
+    console.log('collection select');
+    dbId = $(this).children('option:selected').val();
+    config.set('kinvey.collection', dbId);
+  });
 
-$('#environment_select').append(new Option(privateKeys.KinveyKeys.PROD_KEY, privateKeys.KinveyKeys.PROD_KEY));
-$('#environment_select').append(new Option(privateKeys.KinveyKeys.DEV_KEY, privateKeys.KinveyKeys.DEV_KEY));
-
-$('#environment_select').change(function () {
-  appKey = $(this).children('option:selected').val();
-  appAuth = envAuth[appKey];
-});
-$('#collection_select').change(function () {
-  dbId = $(this).children('option:selected').val();
+  // Set the selected one based on what is saved
+  $('#environment_select').val(appKey);
+  $('#collection_select').val(dbId);
 });
 
 $('#logout').on('click', () => {
@@ -104,6 +111,7 @@ $('#fetch').on('click', () => {
       if (dataArray) {
         collectData(dataArray);
         plotData();
+        plotGeo();
       }
     })
     .catch(error => {
@@ -116,10 +124,20 @@ $('#clear_plot').on('click', () => {
   clearPlot();
 });
 
+function resizePlots() {
+  d3.selectAll('.kinvey-plot').each(function () {
+    if (d3.select(this).node()) {
+      plotly.Plots.resize(d3.select(this).node()).catch(error => {
+        console.error(error);
+      });
+    }
+  });
+}
+
 function clearPlot() {
   try {
     plotly.purge(d3.select('#raw_data').node());
-    plotly.purge(d3.select('#location').node());
+    plotly.purge(d3.select('#locations').node());
   } catch (error) {
     console.error(error);
   }
@@ -564,3 +582,4 @@ function showLogin(duration) {
 
 module.exports.plotData = plotData;
 module.exports.plotGeo = plotGeo;
+module.exports.resizePlots = resizePlots;
