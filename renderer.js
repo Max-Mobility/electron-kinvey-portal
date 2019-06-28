@@ -31,8 +31,8 @@ let username = null;
 let password = null;
 let userData = {};
 let userDataArray = [];
-const geoData = {};
-const geoDataArray = [];
+let geoData = {};
+let geoDataArray = [];
 const apiBase = privateKeys.KinveyKeys.HOST_URL;
 let appKey = privateKeys.KinveyKeys.PROD_KEY;
 let appAuth = privateKeys.KinveyKeys.PROD_SECRET;
@@ -117,9 +117,17 @@ $('#clear_plot').on('click', () => {
 });
 
 function clearPlot() {
-  plotly.purge(d3.select('#raw_data').node());
+  try {
+    plotly.purge(d3.select('#raw_data').node());
+    plotly.purge(d3.select('#location').node());
+  } catch (error) {
+    console.error(error);
+  }
+
   userData = {};
   userDataArray = [];
+  geoData = {};
+  geoDataArray = [];
 }
 
 function collectData(dataArray) {
@@ -130,7 +138,33 @@ function collectData(dataArray) {
       const userId = d.user_identifier;
       // Pull out the location data
       const geo = d.location;
-      if (geo) {
+      const geos = d.locations;
+      if (geos) {
+        // NEW STYLE LOCATION ARRAY
+        // Upsert geodata
+        if (!geoData[userId]) {
+          geoData[userId] = {
+            type: 'scattermapbox',
+            mode: 'lines',
+            lon: [],
+            lat: [],
+            time: []
+          };
+          geoDataArray.push(geoData[userId]);
+        }
+
+        // eslint-disable-next-line array-callback-return
+        geos.map(g => {
+          const lat = g.latitude;
+          const lon = g.longitude;
+          const t = g.time;
+          // Insert into geodata
+          geoData[userId].lon.push(lon);
+          geoData[userId].lat.push(lat);
+          geoData[userId].time.push(t);
+        });
+      } else if (geo) {
+        // OLD STYLE SINGLE LOCATION PER ENTRY
         // Upsert geodata
         if (!geoData[userId]) {
           geoData[userId] = {
