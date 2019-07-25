@@ -120,6 +120,52 @@ $('#fetch').on('click', () => {
     });
 });
 
+$('#fetch_geo').on('click', () => {
+  const userId = $('#user_id').val();
+  const date = $('#date').val();
+  const limit = $('#limit').val();
+  const skip = $('#skip').val();
+  const fields = ['location', 'locations','user_identifier']
+  console.log(date);
+  startSpinner();
+  makeRequest(userId, new Date(date), limit, skip, fields)
+    .then(dataArray => {
+      stopSpinner();
+      if (dataArray) {
+        collectData(dataArray);
+        plotData();
+        plotGeo();
+      }
+    })
+    .catch(error => {
+      stopSpinner();
+      showError(error);
+    });
+});
+
+$('#fetch_sensor').on('click', () => {
+  const userId = $('#user_id').val();
+  const date = $('#date').val();
+  const limit = $('#limit').val();
+  const skip = $('#skip').val();
+  const fields = ['sensor_data','user_identifier']
+  console.log(date);
+  startSpinner();
+  makeRequest(userId, new Date(date), limit, skip)
+    .then(dataArray => {
+      stopSpinner();
+      if (dataArray) {
+        collectData(dataArray);
+        plotData();
+        plotGeo();
+      }
+    })
+    .catch(error => {
+      stopSpinner();
+      showError(error);
+    });
+});
+
 $('#clear_plot').on('click', () => {
   clearPlot();
 });
@@ -148,6 +194,43 @@ function clearPlot() {
   geoDataArray = [];
 }
 
+function updateGeoData(geo, userId) {
+  // Upsert geodata
+  if (!geoData[userId]) {
+    geoData[userId] = {
+      type: 'scattermapbox',
+      mode: 'lines',
+      name: userId,
+      lon: [],
+      lat: [],
+      time: [],
+      text: []
+    };
+    geoDataArray.push(geoData[userId]);
+  }
+
+  const lat = geo.latitude;
+  const lon = geo.longitude;
+  const t = geo.time;
+  // find the right place to insert
+  let index = 0;
+  geoData[userId].time.map((time, i) => {
+    if (time < t) index = i;
+  });
+  var closest = geoData[userId].time.reduce(function(prev, curr) {
+    return (Math.abs(curr - t) < Math.abs(prev - t) ? curr : prev);
+  }, -1);
+  if (closest !== t) {
+    // Insert into geodata
+    geoData[userId].lon.splice(index, 0, lon);
+    geoData[userId].lat.splice(index, 0, lat);
+    geoData[userId].time.splice(index, 0, t);
+    geoData[userId].text.splice(index, 0, new Date(t));
+    console.log(geoData[userId].time);
+  }
+  console.log(geoData[userId].time);
+}
+
 function collectData(dataArray) {
   console.log('parsing data');
   dataArray
@@ -157,51 +240,19 @@ function collectData(dataArray) {
       // Pull out the location data
       const geo = d.location;
       const geos = d.locations;
-      if (geos) {
+      if (geos && geos.length) {
+        console.log('has updated location data');
         // NEW STYLE LOCATION ARRAY
-        // Upsert geodata
-        if (!geoData[userId]) {
-          geoData[userId] = {
-            type: 'scattermapbox',
-            mode: 'lines',
-            lon: [],
-            lat: [],
-            time: []
-          };
-          geoDataArray.push(geoData[userId]);
-        }
-
         // eslint-disable-next-line array-callback-return
         geos.map(g => {
-          const lat = g.latitude;
-          const lon = g.longitude;
-          const t = g.time;
-          // Insert into geodata
-          geoData[userId].lon.push(lon);
-          geoData[userId].lat.push(lat);
-          geoData[userId].time.push(t);
+          updateGeoData(g, userId);
         });
       } else if (geo) {
+        console.log('only has old style location data');
         // OLD STYLE SINGLE LOCATION PER ENTRY
-        // Upsert geodata
-        if (!geoData[userId]) {
-          geoData[userId] = {
-            type: 'scattermapbox',
-            mode: 'lines',
-            lon: [],
-            lat: [],
-            time: []
-          };
-          geoDataArray.push(geoData[userId]);
-        }
-
-        const lat = geo.latitude;
-        const lon = geo.longitude;
-        const t = geo.time;
-        // Insert into geodata
-        geoData[userId].lon.push(lon);
-        geoData[userId].lat.push(lat);
-        geoData[userId].time.push(t);
+        updateGeoData(geo, userId);
+      } else {
+        console.log('no location data for this record.');
       }
 
       // Need to return the original for the chain
@@ -211,6 +262,7 @@ function collectData(dataArray) {
     .flat()
   // eslint-disable-next-line array-callback-return
     .map(entry => {
+      if (entry === null || entry === undefined) return;
       const typeString = sensorTypeToString(entry.s);
       if (typeString !== 'unknown') {
         if (!userData[typeString]) {
@@ -399,7 +451,7 @@ function sensorTypeToString(t) {
   return typeString;
 }
 
-function makeRequest(userId, date, limit, skip) {
+function makeRequest(userId, date, limit, skip, fields = undefined) {
   if (!auth) {
     // eslint-disable-next-line prefer-promise-reject-errors
     return Promise.reject({
@@ -422,13 +474,18 @@ function makeRequest(userId, date, limit, skip) {
     };
   }
 
+  if (fields && fields.length) {
+    fields = fields.join(',')
+  }
+
   let cancel = null;
   const url = `${apiBase}/appdata/${appKey}/${dbId}`;
   return axios.get(url, {
     params: {
       query,
       limit,
-      skip
+      skip,
+      fields
     },
     headers: {
       Authorization: auth
