@@ -215,7 +215,7 @@ function updateGeoData(geo, userId) {
   // find the right place to insert
   let index = 0;
   geoData[userId].time.map((time, i) => {
-    if (time < t) index = i;
+    if (time < t) index = i + 1;
   });
   var closest = geoData[userId].time.reduce(function(prev, curr) {
     return (Math.abs(curr - t) < Math.abs(prev - t) ? curr : prev);
