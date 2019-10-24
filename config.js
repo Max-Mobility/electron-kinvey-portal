@@ -6,7 +6,7 @@ const privateKeys = require('@maxmobility/private-keys');
 module.exports = new Store({
   defaults: {
     kinvey: {
-      environment: privateKeys.KinveyKeys.PROD_KEY,
+      environment: privateKeys.SmartEvalKinveyKeys.PROD_KEY,
       collection: 'PSDSData'
     }
   }
