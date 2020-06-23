@@ -126,7 +126,7 @@ $('#fetch_geo').on('click', () => {
   const date = $('#date').val();
   const limit = $('#limit').val();
   const skip = $('#skip').val();
-  const fields = ['location', 'locations','user_identifier']
+  const fields = ['location', 'locations', 'user_identifier'];
   console.log(date);
   startSpinner();
   makeRequest(userId, new Date(date), limit, skip, fields)
@@ -149,7 +149,6 @@ $('#fetch_sensor').on('click', () => {
   const date = $('#date').val();
   const limit = $('#limit').val();
   const skip = $('#skip').val();
-  const fields = ['sensor_data','user_identifier']
   console.log(date);
   startSpinner();
   makeRequest(userId, new Date(date), limit, skip)
@@ -213,12 +212,15 @@ function updateGeoData(geo, userId) {
   const lat = geo.latitude;
   const lon = geo.longitude;
   const t = geo.time;
-  // find the right place to insert
+  // Find the right place to insert
   let index = 0;
+  // eslint-disable-next-line array-callback-return
   geoData[userId].time.map((time, i) => {
-    if (time < t) index = i + 1;
+    if (time < t) {
+      index = i + 1;
+    }
   });
-  var closest = geoData[userId].time.reduce(function(prev, curr) {
+  const closest = geoData[userId].time.reduce((prev, curr) => {
     return (Math.abs(curr - t) < Math.abs(prev - t) ? curr : prev);
   }, -1);
   if (closest !== t) {
@@ -229,6 +231,7 @@ function updateGeoData(geo, userId) {
     geoData[userId].text.splice(index, 0, new Date(t));
     console.log(geoData[userId].time);
   }
+
   console.log(geoData[userId].time);
 }
 
@@ -241,7 +244,7 @@ function collectData(dataArray) {
       // Pull out the location data
       const geo = d.location;
       const geos = d.locations;
-      if (geos && geos.length) {
+      if (geos && geos.length > 0) {
         console.log('has updated location data');
         // NEW STYLE LOCATION ARRAY
         // eslint-disable-next-line array-callback-return
@@ -259,14 +262,18 @@ function collectData(dataArray) {
       // Need to return the original for the chain
       return d;
     })
-      // eslint-disable-next-line array-callback-return
+    // eslint-disable-next-line array-callback-return
     .map(d => {
       // Pull out which user this is
       const userId = d.user_identifier;
       d.sensor_data
-      // eslint-disable-next-line array-callback-return
+        // eslint-disable-next-line array-callback-return
         .map(entry => {
-          if (entry === null || entry === undefined) return;
+          if (entry === null || entry === undefined) {
+            // eslint-disable-next-line array-callback-return
+            return;
+          }
+
           const typeString = userId + ' ' + sensorTypeToString(entry.s);
           if (typeString !== 'unknown') {
             if (!userData[typeString]) {
@@ -456,6 +463,7 @@ function sensorTypeToString(t) {
   return typeString;
 }
 
+// eslint-disable-next-line max-params
 function makeRequest(userId, date, limit, skip, fields = undefined) {
   if (!auth) {
     // eslint-disable-next-line prefer-promise-reject-errors
@@ -479,8 +487,8 @@ function makeRequest(userId, date, limit, skip, fields = undefined) {
     };
   }
 
-  if (fields && fields.length) {
-    fields = fields.join(',')
+  if (fields && fields.length > 0) {
+    fields = fields.join(',');
   }
 
   let cancel = null;
