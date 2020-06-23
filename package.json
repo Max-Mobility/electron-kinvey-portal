@@ -1,7 +1,7 @@
 {
 	"name": "electron-kinvey-portal",
 	"productName": "Electron Kinvey Portal",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "Interface for interacting with data / files within Kinvey.",
 	"license": "MIT",
 	"repository": "max-mobility/electron-kinvey-portal",
