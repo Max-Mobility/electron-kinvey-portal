@@ -275,35 +275,83 @@ function collectData(dataArray) {
           }
 
           const typeString = userId + ' ' + sensorTypeToString(entry.s);
-          if (typeString !== 'unknown') {
+          const numData = numDataForSensorType(entry.s);
+          if (numData > 0) {
             if (!userData[typeString]) {
               // Create new plot data object
               const t = [];
-              userData[typeString] = {
-                t,
-                x: {
-                  x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
-                },
-                y: {
-                  x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
-                },
-                z: {
-                  x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
-                }
-              };
-              // Make sure to update the data array
-              userDataArray.push(
-                userData[typeString].x,
-                userData[typeString].y,
-                userData[typeString].z
-              );
+              if (numData === 3) {
+                userData[typeString] = {
+                  t,
+                  x: {
+                    x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
+                  },
+                  y: {
+                    x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
+                  },
+                  z: {
+                    x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
+                  }
+                };
+                // Make sure to update the data array
+                userDataArray.push(
+                  userData[typeString].x,
+                  userData[typeString].y,
+                  userData[typeString].z
+                );
+              } else if (numData === 4) {
+                userData[typeString] = {
+                  t,
+                  x: {
+                    x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
+                  },
+                  y: {
+                    x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
+                  },
+                  z: {
+                    x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
+                  },
+                  w: {
+                    x: t, y: [], name: typeString + ' w', type: 'scatter', mode: 'lines'
+                  }
+                };
+                // Make sure to update the data array
+                userDataArray.push(
+                  userData[typeString].x,
+                  userData[typeString].y,
+                  userData[typeString].z,
+                  userData[typeString].w
+                );
+              } else if (numData === 1) {
+                userData[typeString] = {
+                  t,
+                  x: {
+                    x: t, y: [], name: typeString, type: 'scatter', mode: 'lines'
+                  }
+                };
+                // Make sure to update the data array
+                userDataArray.push(
+                  userData[typeString].x
+                );
+              }
             }
 
             // Now add the new data
-            userData[typeString].t.push(new Date(entry.t));
-            userData[typeString].x.y.push(entry.d[0]);
-            userData[typeString].y.y.push(entry.d[1]);
-            userData[typeString].z.y.push(entry.d[2]);
+            if (numData === 3) {
+              userData[typeString].t.push(new Date(entry.t));
+              userData[typeString].x.y.push(entry.d[0]);
+              userData[typeString].y.y.push(entry.d[1]);
+              userData[typeString].z.y.push(entry.d[2]);
+            } else if (numData === 4) {
+              userData[typeString].t.push(new Date(entry.t));
+              userData[typeString].x.y.push(entry.d[0]);
+              userData[typeString].y.y.push(entry.d[1]);
+              userData[typeString].z.y.push(entry.d[2]);
+              userData[typeString].w.y.push(entry.d[3]);
+            } else if (numData === 1) {
+              userData[typeString].t.push(new Date(entry.t));
+              userData[typeString].x.y.push(entry.d[0]);
+            }
           }
         });
     });
@@ -443,24 +491,59 @@ function makeGeoLayout(coord) {
 function sensorTypeToString(t) {
   let typeString = 'unknown';
   switch (t) {
-    case 9:
-      typeString = 'Gravity';
-      break;
-    case 10:
-      typeString = 'Linear Acceleration';
-      break;
-    case 4:
-      typeString = 'Gyroscope';
-      break;
-    case 15:
-      typeString = 'Rotation Vector';
-      break;
-    default:
-      typeString = 'unknown';
-      break;
+  case 9:
+    typeString = 'Gravity';
+    break;
+  case 10:
+    typeString = 'Linear Acceleration';
+    break;
+  case 4:
+    typeString = 'Gyroscope';
+    break;
+  case 15:
+    typeString = 'Rotation Vector';
+    break;
+  case 34:
+    typeString = 'Off-Body Detect';
+    break;
+  default:
+    typeString = 'Sensor_Type (' + t + ')';
+    break;
   }
 
   return typeString;
+}
+
+function numDataForSensorType(t) {
+  let numData = 1;
+  switch (t) {
+  case 9:
+    // gravity
+    numData = 3;
+    break;
+  case 10:
+    // linear accel
+    numData = 3;
+    break;
+  case 4:
+    // gyro
+    numData = 3;
+    break;
+  case 15:
+    // rotation vector
+    numData = 4;
+    break;
+  case 34:
+    // off body detect
+    numData = 1;
+    break;
+  default:
+    // unknown
+    numData = 1;
+    break;
+  }
+
+  return numData;
 }
 
 // eslint-disable-next-line max-params
