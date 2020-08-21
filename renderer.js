@@ -302,25 +302,21 @@ function collectData(dataArray) {
               } else if (numData === 4) {
                 userData[typeString] = {
                   t,
-                  x: {
-                    x: t, y: [], name: typeString + ' x', type: 'scatter', mode: 'lines'
+                  roll: {
+                    x: t, y: [], name: typeString + 'Roll', type: 'scatter', mode: 'lines'
                   },
-                  y: {
-                    x: t, y: [], name: typeString + ' y', type: 'scatter', mode: 'lines'
+                  pitch: {
+                    x: t, y: [], name: typeString + 'Pitch', type: 'scatter', mode: 'lines'
                   },
-                  z: {
-                    x: t, y: [], name: typeString + ' z', type: 'scatter', mode: 'lines'
-                  },
-                  w: {
-                    x: t, y: [], name: typeString + ' w', type: 'scatter', mode: 'lines'
+                  yaw: {
+                    x: t, y: [], name: typeString + 'Yaw', type: 'scatter', mode: 'lines'
                   }
                 };
                 // Make sure to update the data array
                 userDataArray.push(
-                  userData[typeString].x,
-                  userData[typeString].y,
-                  userData[typeString].z,
-                  userData[typeString].w
+                  userData[typeString].roll,
+                  userData[typeString].pitch,
+                  userData[typeString].yaw
                 );
               } else if (numData === 1) {
                 userData[typeString] = {
@@ -343,11 +339,34 @@ function collectData(dataArray) {
               userData[typeString].y.y.push(entry.d[1]);
               userData[typeString].z.y.push(entry.d[2]);
             } else if (numData === 4) {
+              const q = {
+                x: entry.d[0],
+                y: entry.d[1],
+                z: entry.d[2],
+                w: entry.d[3]
+              };
+              // roll (x-axis rotation)
+              const sinr_cosp = 2 * (q.w * q.x + q.y * q.z);
+              const cosr_cosp = 1 - 2 * (q.x * q.x + q.y * q.y);
+              const roll = Math.atan2(sinr_cosp, cosr_cosp);
+
+              // pitch (y-axis rotation)
+              const sinp = 2 * (q.w * q.y - q.z * q.x);
+              let pitch = Math.PI;
+              if (Math.abs(sinp) >= 1)
+                pitch *= sinp / Math.abs(sinp);
+              else
+                pitch = Math.asin(sinp);
+
+              // yaw (z-axis rotation)
+              const siny_cosp = 2 * (q.w * q.z + q.x * q.y);
+              const cosy_cosp = 1 - 2 * (q.y * q.y + q.z * q.z);
+              const yaw = Math.atan2(siny_cosp, cosy_cosp);
+
               userData[typeString].t.push(new Date(entry.t));
-              userData[typeString].x.y.push(entry.d[0]);
-              userData[typeString].y.y.push(entry.d[1]);
-              userData[typeString].z.y.push(entry.d[2]);
-              userData[typeString].w.y.push(entry.d[3]);
+              userData[typeString].roll.y.push(roll);
+              userData[typeString].pitch.y.push(pitch);
+              userData[typeString].yaw.y.push(yaw);
             } else if (numData === 1) {
               userData[typeString].t.push(new Date(entry.t));
               userData[typeString].x.y.push(entry.d[0]);
@@ -501,7 +520,9 @@ function sensorTypeToString(t) {
     typeString = 'Gyroscope';
     break;
   case 15:
-    typeString = 'Rotation Vector';
+    // we don't care about this sensor type string since it's the only
+    // source of roll, pitch, and yaw so it's unique
+    typeString = '';
     break;
   case 34:
     typeString = 'Off-Body Detect';
