@@ -35,7 +35,7 @@
 		"plotly.js": "^1.48.3"
 	},
 	"devDependencies": {
-		"electron": "^5.0.4",
+		"electron": "^28.3.2",
 		"electron-builder": "^20.43.0",
 		"electron-rebuild": "^1.8.5",
 		"np": "^5.0.3",
